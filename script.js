@@ -653,7 +653,7 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(renderLoop);
   }
 
-  spawnHearts(60);
+  spawnHearts(150);
   renderLoop();
 
   // ══════════════════════════════════════════
