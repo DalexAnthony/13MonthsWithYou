@@ -797,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
         simonGrid.classList.add('locked');
         setStatus('—');
 
-        if (level === 5 && !infinite) {
+        if (level === 10 && !infinite) {
           saveHS();
           playChime();
           spawnConfetti(80);
