@@ -238,6 +238,9 @@ html, body {
   border-radius: var(--radius-md);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  transition: border-color 0.6s ease, box-shadow 0.6s ease;
+  border-color: var(--player-color-glow);
+  box-shadow: 0 0 20px -8px var(--player-color-glow);
 }
 
 .header-left, .header-right {
@@ -294,12 +297,14 @@ html, body {
   gap: 48px 36px;
   padding: 24px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
   max-width: 720px;
   margin: 0 auto;
   width: 100%;
   flex-shrink: 0;
+  transition: border-color 0.6s ease, box-shadow 0.6s ease;
+  border: 1px solid var(--player-color-glow);
+  box-shadow: 0 0 24px -10px var(--player-color-glow);
 }
 
 .simon-btn {
