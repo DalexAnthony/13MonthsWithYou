@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simon — Memory Game</title>
+  <meta name="description" content="A sleek, modern take on the classic Simon memory game. 8 colors, 10 levels, infinite mode.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,600;1,600&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <main class="app">
+
+    <section id="intro-screen" class="screen active">
+      <div class="card intro-card">
+        <div class="intro-label">MEMORY GAME</div>
+        <h1 class="intro-title">Simon<span class="dot">.</span></h1>
+        <p class="intro-sub">8 colores. 10 niveles. Un desafío de memoria.</p>
+        <div class="intro-grid-preview">
+          <div class="preview-sq sq-0"></div>
+          <div class="preview-sq sq-1"></div>
+          <div class="preview-sq sq-2"></div>
+          <div class="preview-sq sq-3"></div>
+          <div class="preview-sq sq-4"></div>
+          <div class="preview-sq sq-5"></div>
+          <div class="preview-sq sq-6"></div>
+          <div class="preview-sq sq-7"></div>
+        </div>
+        <button id="btn-start" class="btn-primary">Iniciar</button>
+      </div>
+    </section>
+
+    <section id="game-screen" class="screen">
+      <div class="game-layout">
+
+        <header class="game-header">
+          <div class="header-left">
+            <span class="header-label">NIVEL</span>
+            <span id="level-display" class="header-value">1</span>
+            <span class="header-slash">/</span>
+            <span id="level-max" class="header-max">10</span>
+          </div>
+          <div class="header-center">
+            <span id="status-text" class="status-text">—</span>
+          </div>
+          <div class="header-right">
+            <span class="header-label">RÉCORD</span>
+            <span id="highscore-display" class="header-value">0</span>
+          </div>
+        </header>
+
+        <div class="simon-grid" id="simon-grid">
+          <button class="simon-btn" id="btn-0" data-index="0"></button>
+          <button class="simon-btn" id="btn-1" data-index="1"></button>
+          <button class="simon-btn" id="btn-2" data-index="2"></button>
+          <button class="simon-btn" id="btn-3" data-index="3"></button>
+          <button class="simon-btn" id="btn-4" data-index="4"></button>
+          <button class="simon-btn" id="btn-5" data-index="5"></button>
+          <button class="simon-btn" id="btn-6" data-index="6"></button>
+          <button class="simon-btn" id="btn-7" data-index="7"></button>
+        </div>
+
+        <footer class="game-footer" style="padding: 10px 18px;">
+          <audio id="bg-music"></audio>
+
+          <!-- MUSIC PLAYER -->
+          <div class="music-player" id="music-player" style="padding: 0;">
+
+            <!-- Controls -->
+            <div class="player-controls">
+              <div class="pcs"></div>
+              <div class="pcc">
+                <button class="player-btn" id="btn-prev" aria-label="Anterior">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
+                <button class="player-btn player-btn-main" id="btn-play-pause" aria-label="Play/Pause">
+                  <svg id="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button class="player-btn" id="btn-next" aria-label="Siguiente">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg>
+                </button>
+              </div>
+              <div class="pcs volume-wrap">
+                <button class="mute-btn" id="mute-btn" aria-label="Mute">
+                  <svg id="icon-sound" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                  <svg id="icon-mute" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M3 9v6h4l5 5V4L7 9H3zm13.83 3L14 9.17l2.83-2.83 1.41 1.41L16.24 12l2.83 2.83-1.41 1.41L14 14.83 10.17 18.66l-1.41-1.41L11.76 12 8.76 9l1.41-1.41L14 11.17l2.83-2.83 1.41 1.41L16.24 12l2.83 2.83-1.41 1.41L14 14.83z"/></svg>
+                </button>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.5">
+              </div>
+            </div>
+
+          </div>
+        </footer>
+
+      </div>
+    </section>
+
+  </main>
+
+  <div id="modal-gameover" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-tag">GAME OVER</div>
+      <p class="modal-level-reached">Llegaste al nivel <span id="gameover-level">1</span></p>
+      <button id="btn-retry" class="btn-primary">Reintentar</button>
+    </div>
+  </div>
+
+  <div id="modal-letter" class="modal-overlay">
+    <div class="modal-card letter-card">
+      <button id="btn-letter-close" class="letter-close" aria-label="Cerrar">✕</button>
+      <div class="letter-body">
+        <p id="letter-text" class="letter-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-victory" class="modal-overlay">
+    <div class="modal-card victory-card">
+      <div class="modal-tag tag-gold">NIVEL 10 COMPLETADO</div>
+      <h2 class="modal-title" id="victory-title">Felicidades</h2>
+      <p class="modal-sub" id="victory-sub">Completaste los 10 niveles</p>
+      <p class="modal-question">¿Quieres seguir jugando?</p>
+      <div class="modal-actions">
+        <button id="btn-yes-infinite" class="btn-primary">Seguir jugando</button>
+        <button id="btn-no-infinite" class="btn-secondary">No, ya terminé</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="toast" class="toast">
+    <span id="toast-msg"></span>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

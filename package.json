@@ -1,0 +1,21 @@
+{
+  "name": "cute-simon-says",
+  "version": "1.0.0",
+  "description": "Un juego de Simon Says clásico con diseño tierno, moderno y personalizable en HTML, CSS y JS.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000 -c-1 -o"
+  },
+  "keywords": [
+    "simon-says",
+    "cute",
+    "game",
+    "aesthetic",
+    "pastel"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
