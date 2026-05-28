@@ -448,8 +448,28 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.closePath();
   }
 
+  function drawLeftHeartHalf(cx, cy, size) {
+    ctx.beginPath();
+    const topY = cy - size * 0.4;
+    ctx.moveTo(cx, cy + size * 0.6);
+    ctx.bezierCurveTo(cx - size*0.8, cy + size*0.1, cx - size*0.8, topY - size*0.2, cx - size*0.35, topY - size*0.2);
+    ctx.bezierCurveTo(cx - size*0.1, topY - size*0.2, cx, topY, cx, topY + size*0.15);
+    ctx.lineTo(cx, cy + size * 0.6);
+    ctx.closePath();
+  }
+
+  function drawRightHeartHalf(cx, cy, size) {
+    ctx.beginPath();
+    const topY = cy - size * 0.4;
+    ctx.moveTo(cx, topY + size * 0.15);
+    ctx.bezierCurveTo(cx, topY, cx + size*0.1, topY - size*0.2, cx + size*0.35, topY - size*0.2);
+    ctx.bezierCurveTo(cx + size*0.8, topY - size*0.2, cx + size*0.8, cy + size*0.1, cx, cy + size*0.6);
+    ctx.lineTo(cx, topY + size * 0.15);
+    ctx.closePath();
+  }
+
   class Particle {
-    constructor(x, y, type, color) {
+    constructor(x, y, type, color, customSize = null, customRot = null) {
       this.x    = x;
       this.y    = y;
       this.type = type;
@@ -461,13 +481,30 @@ document.addEventListener('DOMContentLoaded', () => {
       if (type === 'heart') {
         this.vx       = (Math.random() - 0.5) * 0.4;
         this.vy       = -Math.random() * 0.6 - 0.3;
-        this.size     = Math.random() * 26 + 14;
+        this.size     = customSize !== null ? customSize : (Math.random() * 26 + 14);
         this.decay    = 0;
-        this.rot      = (Math.random() - 0.5) * 0.4;
+        this.rot      = customRot !== null ? customRot : ((Math.random() - 0.5) * 0.4);
         this.rotSpd   = (Math.random() - 0.5) * 0.008;
         this.baseAlpha= Math.random() * 0.22 + 0.18;
         this.wobble   = Math.random() * Math.PI * 2;
         this.wobbleSpd= Math.random() * 0.015 + 0.006;
+        this.isSpawnedFromClick = false;
+      } else if (type === 'split-left') {
+        this.vx       = -Math.random() * 1.5 - 0.5;
+        this.vy       = -Math.random() * 2.0 - 1.0;
+        this.size     = customSize !== null ? customSize : 18;
+        this.decay    = 0.022;
+        this.rot      = customRot !== null ? customRot : 0;
+        this.rotSpd   = -Math.random() * 0.06 - 0.02;
+        this.gravity  = 0.1;
+      } else if (type === 'split-right') {
+        this.vx       = Math.random() * 1.5 + 0.5;
+        this.vy       = -Math.random() * 2.0 - 1.0;
+        this.size     = customSize !== null ? customSize : 18;
+        this.decay    = 0.022;
+        this.rot      = customRot !== null ? customRot : 0;
+        this.rotSpd   = Math.random() * 0.06 + 0.02;
+        this.gravity  = 0.1;
       } else if (type === 'burst-heart') {
         this.vx     = (Math.random() - 0.5) * 4;
         this.vy     = (Math.random() - 0.5) * 4 - 2;
@@ -500,13 +537,29 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.type === 'heart') {
         const beatFactor = 0.3 + beatScale * 0.9;
         this.wobble += this.wobbleSpd * beatFactor;
-        this.x += (this.vx + Math.sin(this.wobble) * 0.5) * beatFactor;
-        this.y += this.vy * beatFactor + (beatScale - 1.0) * 1.2;
+        if (this.isSpawnedFromClick) {
+          this.vx *= 0.94;
+          this.vy = this.vy * 0.94 + (-Math.random() * 0.6 - 0.3) * 0.06;
+          this.x += this.vx * beatFactor;
+          this.y += this.vy * beatFactor;
+          if (Math.abs(this.vx) < 0.15 && this.vy > -1) {
+            this.isSpawnedFromClick = false;
+          }
+        } else {
+          this.x += (this.vx + Math.sin(this.wobble) * 0.5) * beatFactor;
+          this.y += this.vy * beatFactor + (beatScale - 1.0) * 1.2;
+        }
         this.rot += this.rotSpd * beatFactor;
         if (this.y < -this.size * 2) {
           this.y = canvas.height + this.size * 2;
           this.x = Math.random() * canvas.width;
         }
+      } else if (this.type === 'split-left' || this.type === 'split-right') {
+        this.x   += this.vx;
+        this.y   += this.vy;
+        this.vy  += this.gravity;
+        this.rot += this.rotSpd;
+        this.life -= this.decay;
       } else if (this.type === 'burst-heart') {
         this.x   += this.vx;
         this.y   += this.vy;
@@ -542,6 +595,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.rotate(this.rot);
         ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
         drawHeart(0, 0, sz);
+        ctx.fill();
+      } else if (this.type === 'split-left') {
+        ctx.globalAlpha = Math.max(0, this.life) * 0.75;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
+        drawLeftHeartHalf(0, 0, this.size);
+        ctx.fill();
+      } else if (this.type === 'split-right') {
+        ctx.globalAlpha = Math.max(0, this.life) * 0.75;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
+        drawRightHeartHalf(0, 0, this.size);
         ctx.fill();
       } else if (this.type === 'burst-heart') {
         ctx.globalAlpha = Math.max(0, this.life) * 0.9;
@@ -596,6 +663,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function clearConfetti() {
     particles = particles.filter(p => p.type !== 'confetti');
+  }
+
+  function spawnHeartsFromSplit(x, y, color, originalSize) {
+    const leftNew = new Particle(x, y, 'heart', color);
+    leftNew.size = originalSize * 0.75;
+    leftNew.vx = -Math.random() * 2.0 - 0.8;
+    leftNew.vy = -Math.random() * 2.5 - 1.5;
+    leftNew.isSpawnedFromClick = true;
+
+    const rightNew = new Particle(x, y, 'heart', color);
+    rightNew.size = originalSize * 0.75;
+    rightNew.vx = Math.random() * 2.0 + 0.8;
+    rightNew.vy = -Math.random() * 2.5 - 1.5;
+    rightNew.isSpawnedFromClick = true;
+
+    particles.push(leftNew, rightNew);
+  }
+
+  function spawnHeartClickSparks(x, y, color) {
+    for (let i = 0; i < 8; i++) {
+      const p = new Particle(x, y, 'spark', color);
+      p.vx = (Math.random() - 0.5) * 4;
+      p.vy = (Math.random() - 0.5) * 4 - 1.5;
+      p.size = Math.random() * 2.2 + 1.2;
+      p.decay = 0.035;
+      particles.push(p);
+    }
+  }
+
+  function playHeartSplitTone() {
+    if (muted || vol === 0) return;
+    initAudioCtx();
+    const baseFreq = 800 + Math.random() * 350;
+    playTone(baseFreq, 0.22, 'sine');
+    setTimeout(() => {
+      playTone(baseFreq * 1.25, 0.22, 'sine');
+    }, 55);
+  }
+
+  function handleScreenClick(clientX, clientY) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      if (p.type === 'heart') {
+        const dx = clientX - p.x;
+        const dy = clientY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < p.size * 1.35) {
+          particles.splice(i, 1);
+          const color = [p.r, p.g, p.b];
+          particles.push(new Particle(p.x, p.y, 'split-left', color, p.size, p.rot));
+          particles.push(new Particle(p.x, p.y, 'split-right', color, p.size, p.rot));
+          spawnHeartsFromSplit(p.x, p.y, color, p.size);
+          spawnHeartClickSparks(p.x, p.y, color);
+          break;
+        }
+      }
+    }
   }
 
   // ══════════════════════════════════════════
@@ -655,6 +780,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   spawnHearts(150);
   renderLoop();
+
+  // ── Interactive Heart Click/Tap ──
+  function isInteractiveElement(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'A' || tag === 'LABEL') return true;
+    if (el.closest('.simon-btn, .player-btn, .player-btn-main, .btn-primary, .btn-secondary, .mute-btn, .modal-overlay.active, .music-player, #volume-slider, .player-progress-bar, .letter-close')) return true;
+    return false;
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    if (isInteractiveElement(e.target)) return;
+    handleScreenClick(e.clientX, e.clientY);
+  });
+
+  document.addEventListener('touchstart', (e) => {
+    if (isInteractiveElement(e.target)) return;
+    const t = e.touches[0];
+    handleScreenClick(t.clientX, t.clientY);
+  }, { passive: true });
 
   // ══════════════════════════════════════════
   //  MUSIC START / STOP
