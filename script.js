@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.75;
+    analyser.smoothingTimeConstant = 0.4;
     freqData = new Uint8Array(analyser.frequencyBinCount); // 128 bins
 
     // createMediaElementSource can only be called ONCE per HTMLMediaElement.
@@ -111,10 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 100; i <= tEnd; i++) rawTreble += freqData[i];
     rawTreble /= ((tEnd - 99) * 255);
 
-    // Lerp / smoothing
-    sBass   = sBass   * 0.80 + rawBass   * 0.20;
-    sMid    = sMid    * 0.80 + rawMid    * 0.20;
-    sTreble = sTreble * 0.80 + rawTreble * 0.20;
+    // Lerp / smoothing — lower = more reactive to beats
+    sBass   = sBass   * 0.55 + rawBass   * 0.45;
+    sMid    = sMid    * 0.60 + rawMid    * 0.40;
+    sTreble = sTreble * 0.60 + rawTreble * 0.40;
   }
 
   // ══════════════════════════════════════════
@@ -459,15 +459,15 @@ document.addEventListener('DOMContentLoaded', () => {
       this.life = 1;
 
       if (type === 'heart') {
-        this.vx       = (Math.random() - 0.5) * 0.3;
-        this.vy       = -Math.random() * 0.5 - 0.25;
-        this.size     = Math.random() * 22 + 12;
+        this.vx       = (Math.random() - 0.5) * 0.4;
+        this.vy       = -Math.random() * 0.6 - 0.3;
+        this.size     = Math.random() * 26 + 14;
         this.decay    = 0;
         this.rot      = (Math.random() - 0.5) * 0.4;
-        this.rotSpd   = (Math.random() - 0.5) * 0.005;
-        this.baseAlpha= Math.random() * 0.16 + 0.10;
+        this.rotSpd   = (Math.random() - 0.5) * 0.008;
+        this.baseAlpha= Math.random() * 0.22 + 0.18;
         this.wobble   = Math.random() * Math.PI * 2;
-        this.wobbleSpd= Math.random() * 0.01 + 0.004;
+        this.wobbleSpd= Math.random() * 0.015 + 0.006;
       } else if (type === 'burst-heart') {
         this.vx     = (Math.random() - 0.5) * 4;
         this.vy     = (Math.random() - 0.5) * 4 - 2;
@@ -498,10 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     update(beatScale = 1.0) {
       if (this.type === 'heart') {
-        const beatFactor = 0.4 + beatScale * 0.6;
+        const beatFactor = 0.3 + beatScale * 0.9;
         this.wobble += this.wobbleSpd * beatFactor;
-        this.x += (this.vx + Math.sin(this.wobble) * 0.25) * beatFactor;
-        this.y += this.vy * beatFactor + (beatScale - 1.0) * 0.3;
+        this.x += (this.vx + Math.sin(this.wobble) * 0.5) * beatFactor;
+        this.y += this.vy * beatFactor + (beatScale - 1.0) * 1.2;
         this.rot += this.rotSpd * beatFactor;
         if (this.y < -this.size * 2) {
           this.y = canvas.height + this.size * 2;
@@ -531,25 +531,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    draw(beatScale = 1.0, showGlow = true) {
+    draw(beatScale = 1.0) {
       ctx.save();
       if (this.type === 'heart') {
-        const beatBoost = 1.0 + (beatScale - 1.0) * 2.0;
+        const beatBoost = 1.0 + (beatScale - 1.0) * 3.5;
         const sz   = this.size * beatBoost;
-        const al   = Math.min(0.45, this.baseAlpha * (1.0 + (beatScale - 1.0) * 2.5));
+        const al   = Math.min(0.7, this.baseAlpha * (1.0 + (beatScale - 1.0) * 5.0));
         ctx.globalAlpha = al;
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rot);
         ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
         drawHeart(0, 0, sz);
         ctx.fill();
-        if (showGlow) {
-          ctx.globalAlpha = al * 0.35;
-          ctx.shadowColor = `rgba(${this.r},${this.g},${this.b},0.3)`;
-          ctx.shadowBlur  = sz * 1.2;
-          drawHeart(0, 0, sz);
-          ctx.fill();
-        }
       } else if (this.type === 'burst-heart') {
         ctx.globalAlpha = Math.max(0, this.life) * 0.9;
         ctx.translate(this.x, this.y);
@@ -557,13 +550,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = `rgb(${this.r},${this.g},${this.b})`;
         drawHeart(0, 0, this.size);
         ctx.fill();
-        if (showGlow) {
-          ctx.globalAlpha = Math.max(0, this.life) * 0.35;
-          ctx.shadowColor = `rgba(${this.r},${this.g},${this.b},0.3)`;
-          ctx.shadowBlur  = this.size * 1.0;
-          drawHeart(0, 0, this.size);
-          ctx.fill();
-        }
       } else if (this.type === 'spark') {
         ctx.globalAlpha = Math.max(0, this.life) * 0.8;
         ctx.fillStyle   = `rgb(${this.r},${this.g},${this.b})`;
@@ -641,10 +627,12 @@ document.addEventListener('DOMContentLoaded', () => {
       lastTreble = trebleStr;
     }
 
-    const bassScale = 1.0 + sBass * 0.22;
-    const rotDeg    = sTreble * 3;
-    const tiltY     = sBass * -4;
+    // ── Strong button movement (no glow) ──
+    const bassScale = 1.0 + sBass * 0.55;
+    const rotDeg    = sTreble * 6;
+    const tiltY     = sBass * -8;
     const paused    = bgMusic.paused;
+
     btns.forEach((btn) => {
       if (!btn.classList.contains('active')) {
         const s = paused ? 1.0 : bassScale;
@@ -652,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    const beatPulse = 1.0 + sBass * 0.55;
+    const beatPulse = 1.0 + sBass * 1.0;
     const pulseStr  = beatPulse.toFixed(3);
     if (pulseStr !== lastPulse) {
       root.style.setProperty('--beat-scale', pulseStr);
@@ -660,13 +648,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     particles = particles.filter(p => p.life > 0);
-    const showGlow = sBass > 0.08;
-    particles.forEach(p => { p.update(beatPulse); p.draw(beatPulse, showGlow); });
+    particles.forEach(p => { p.update(beatPulse); p.draw(beatPulse); });
 
     requestAnimationFrame(renderLoop);
   }
 
-  spawnHearts(120);
+  spawnHearts(60);
   renderLoop();
 
   // ══════════════════════════════════════════
